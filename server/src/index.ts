@@ -1,14 +1,17 @@
-import { ApolloServer } from 'apollo-server-express'
+import { ApolloServer, PubSub } from 'apollo-server-express'
 import connectRedis from 'connect-redis'
 import cors from 'cors'
 import express from 'express'
 import session from 'express-session'
+import http from 'http'
 import 'reflect-metadata'
 import { buildSchema } from 'type-graphql'
 import { Container } from 'typedi'
 import { createConnection, getConnectionOptions, useContainer } from 'typeorm'
 import { customAuthChecker } from './middleware/authChecker'
 import { redis } from './utils/redis'
+
+const pubSub = new PubSub()
 
 // register 3rd party IOC container
 useContainer(Container)
@@ -54,16 +57,21 @@ const startServer = async () => {
       validate: true,
       authChecker: customAuthChecker,
       container: Container,
+      pubSub,
     }),
     context: ({ req, res }) => ({ req, res }),
   })
 
   apolloServer.applyMiddleware({ app, cors: false })
 
-  const port = process.env.PORT || 4000
+  const PORT = process.env.PORT || 4000
 
-  app.listen(port, () => {
-    console.log(`server started at http://localhost:${port}/graphql`)
+  const httpServer = http.createServer(app)
+  apolloServer.installSubscriptionHandlers(httpServer)
+
+  httpServer.listen(PORT, () => {
+    console.log(`🚀  Server ready at http://localhost:${PORT}${apolloServer.graphqlPath}`)
+    console.log(`🚀  Subscriptions ready at ws://localhost:${PORT}${apolloServer.subscriptionsPath}`)
   })
 }
 

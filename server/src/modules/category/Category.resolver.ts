@@ -1,12 +1,27 @@
-import { Arg, FieldResolver, Int, Mutation, Query, Resolver, Root, UseMiddleware } from 'type-graphql'
+import {
+  Arg,
+  FieldResolver,
+  Int,
+  Mutation,
+  Publisher,
+  PubSub,
+  Query,
+  Resolver,
+  Root,
+  Subscription,
+  UseMiddleware,
+} from 'type-graphql'
 import { Category } from '../../entity/Category'
 import { isAuth } from '../../middleware/isAuth'
+import { Notification, NotificationPayload } from '../notifications/types'
 import { CategoryCreateInput, CategoryUpdateInput } from './Category.input'
 import { CategoryService } from './Category.service'
 
 @Resolver(() => Category)
 export class CategoryResolver {
   constructor(private readonly categoryService: CategoryService) {}
+
+  private autoIncrement = 0
 
   @Query(() => [Category])
   async getCategories() {
@@ -20,8 +35,22 @@ export class CategoryResolver {
 
   @UseMiddleware(isAuth)
   @Mutation(() => Category)
-  async createCategory(@Arg('input') input: CategoryCreateInput) {
-    return this.categoryService.create(input)
+  async createCategory(
+    @Arg('input') input: CategoryCreateInput,
+    @PubSub('NOTIFICATIONS') publish: Publisher<NotificationPayload>
+  ) {
+    const newCategory = await this.categoryService.create(input)
+    await publish({ id: ++this.autoIncrement, message: 'Added new Category' })
+    return newCategory
+  }
+
+  @Subscription({ topics: 'NOTIFICATIONS' })
+  newNotification(@Root() { id, message }: NotificationPayload): Notification {
+    return {
+      id,
+      message,
+      date: new Date(),
+    }
   }
 
   @UseMiddleware(isAuth)
