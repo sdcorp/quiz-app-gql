@@ -1,33 +1,49 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useLoginMutation } from '../generated/graphql'
 import { useHistory } from 'react-router-dom'
+import { useForm, Controller } from 'react-hook-form'
+import { Input as InputField, Form, Button } from 'antd'
+import { loader } from 'graphql.macro'
+
+const meQuery = loader('../graphql/me.graphql')
+
+interface LoginInput {
+  email: string
+  password: string
+}
 
 export const Login: React.FC = () => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   let history = useHistory()
-  const [login] = useLoginMutation({
-    variables: { email, password },
-  })
+  const { control, handleSubmit } = useForm<LoginInput>()
+  const [login] = useLoginMutation()
+
+  const submitForm = async (variables: LoginInput) => {
+    const res = await login({
+      variables,
+      refetchQueries: [{ query: meQuery }],
+    })
+    const user = res.data?.login
+    if (!user) {
+      alert('Invalid auth')
+      return
+    }
+    alert(JSON.stringify(user, null, 2))
+    history.push('/')
+  }
+
   return (
     <div>
-      <form
-        onSubmit={async e => {
-          e.preventDefault()
-          const res = await login()
-          const user = res.data?.login
-          if (!user) {
-            alert('Invalid auth')
-            return
-          }
-          alert(JSON.stringify(user, null, 2))
-          history.push('/')
-        }}
-      >
-        <input type="email" value={email} onChange={e => setEmail(e.target.value)} />
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
-        <button type="submit">Login</button>
-      </form>
+      <Form onSubmit={handleSubmit(submitForm)} className="login-form">
+        <Form.Item>
+          <Controller as={<InputField placeholder="email" />} name="email" control={control} />
+        </Form.Item>
+        <Form.Item>
+          <Controller as={<InputField placeholder="password" type="password" />} name="password" control={control} />
+        </Form.Item>
+        <Button type="primary" htmlType="submit" className="login-form-button">
+          Log in
+        </Button>
+      </Form>
     </div>
   )
 }
