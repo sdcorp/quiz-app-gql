@@ -1,5 +1,6 @@
 import React from 'react'
 import { useGetCategoriesQuery } from '../generated/graphql'
+import { Card } from 'antd'
 
 export const Home: React.FC = () => {
   const { data, loading, error } = useGetCategoriesQuery({ fetchPolicy: 'network-only' })
@@ -7,14 +8,11 @@ export const Home: React.FC = () => {
   if (error) return <p>Error</p>
   return (
     <div className="App">
-      <h1>Categories</h1>
-      <ul>
-        {data?.getCategories.map(c => (
-          <li key={c.id}>
-            {c.name}. Questions: {c.questionCount}
-          </li>
+      <Card title="Categories">
+        {data?.getCategories.map(category => (
+          <Card.Grid className="card__grid">{category.name}</Card.Grid>
         ))}
-      </ul>
+      </Card>
     </div>
   )
 }

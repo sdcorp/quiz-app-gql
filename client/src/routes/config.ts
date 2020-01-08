@@ -1,4 +1,4 @@
-import { RouteProps } from 'react-router-dom'
+import { RouteComponentProps, RouteProps } from 'react-router-dom'
 import { Dashboard, Home, Login, Profile } from '../pages'
 
 export const PAGES = {
@@ -8,11 +8,12 @@ export const PAGES = {
   PROFILE: '/profile',
 }
 
-interface IRoutes extends RouteProps {
+export interface IRoute extends RouteProps {
+  component: React.ComponentType<RouteComponentProps>
   protected?: boolean
 }
 
-export const ROUTES: IRoutes[] = [
+export const ROUTES: IRoute[] = [
   {
     path: PAGES.HOME,
     component: Home,
@@ -21,6 +22,7 @@ export const ROUTES: IRoutes[] = [
   {
     path: PAGES.DASHBOARD,
     component: Dashboard,
+    protected: true,
   },
   {
     path: PAGES.LOGIN,
