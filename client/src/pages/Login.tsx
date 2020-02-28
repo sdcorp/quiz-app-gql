@@ -1,8 +1,7 @@
 import React from 'react'
 import { useLoginMutation } from '../generated/graphql'
 import { useHistory } from 'react-router-dom'
-import { useForm, Controller } from 'react-hook-form'
-import { Input as InputField, Form, Button } from 'antd'
+import { useForm } from 'react-hook-form'
 import { loader } from 'graphql.macro'
 
 const meQuery = loader('../graphql/me.graphql')
@@ -14,9 +13,8 @@ interface LoginInput {
 
 export const Login: React.FC = () => {
   let history = useHistory()
-  const { control, handleSubmit } = useForm<LoginInput>()
+  const { handleSubmit, register, errors } = useForm<LoginInput>()
   const [login] = useLoginMutation()
-
   const submitForm = async (variables: LoginInput) => {
     const res = await login({
       variables,
@@ -33,17 +31,30 @@ export const Login: React.FC = () => {
 
   return (
     <div>
-      <Form onSubmit={handleSubmit(submitForm)} className="login-form">
-        <Form.Item>
-          <Controller as={<InputField placeholder="email" />} name="email" control={control} />
-        </Form.Item>
-        <Form.Item>
-          <Controller as={<InputField placeholder="password" type="password" />} name="password" control={control} />
-        </Form.Item>
-        <Button type="primary" htmlType="submit" className="login-form-button">
-          Log in
-        </Button>
-      </Form>
+      <form onSubmit={handleSubmit(submitForm)}>
+        <input
+          name="email"
+          ref={register({
+            required: 'Required',
+            pattern: {
+              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
+              message: 'invalid email address',
+            },
+          })}
+        />
+        {errors.email && errors.email.message}
+
+        <input
+          name="password"
+          type="password"
+          ref={register({
+            validate: value => value !== 'admin' || 'Nice try!',
+          })}
+        />
+        {errors.password && errors.password.message}
+
+        <button type="submit">Submit</button>
+      </form>
     </div>
   )
 }
